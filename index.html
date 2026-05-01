@@ -1,0 +1,1520 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Predicted Aerosol AOD Imagery</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.30/esri/themes/dark/main.css" />
+  <script src="https://js.arcgis.com/4.30/"></script>
+  <style>
+    html,
+    body,
+    #viewDiv {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #05070a;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .topbar {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      right: 18px;
+      z-index: 10;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      pointer-events: none;
+    }
+
+    .panel {
+      pointer-events: auto;
+      background: rgba(9, 13, 17, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36);
+      backdrop-filter: blur(14px);
+      color: #f3f7fb;
+      border-radius: 8px;
+    }
+
+    .titlePanel {
+      max-width: 540px;
+      padding: 18px 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 29px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .eyebrow {
+      margin-bottom: 8px;
+      color: #77f0a4;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .meta {
+      margin-top: 10px;
+      color: #d2dde6;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .meta strong {
+      color: #ffffff;
+      font-weight: 800;
+    }
+
+    .controlPanel {
+      width: min(430px, calc(100vw - 36px));
+      padding: 14px;
+    }
+
+    .timeButtons {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .toolButtons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .toolGroup {
+      position: relative;
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .infoButton {
+      width: 34px;
+      height: 38px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .tooltip {
+      position: absolute;
+      left: 0;
+      top: 46px;
+      z-index: 30;
+      display: none;
+      width: min(260px, calc(100vw - 56px));
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(9, 13, 17, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+      color: #eaf2f8;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.45;
+    }
+
+    .toolGroup:hover .tooltip,
+    .toolGroup:focus-within .tooltip {
+      display: block;
+    }
+
+    .selectGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .layerControl {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      align-items: end;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .layerToggle {
+      width: 18px;
+      height: 18px;
+      margin: 0 0 9px;
+      accent-color: #77f0a4;
+      cursor: pointer;
+    }
+
+    .overlayPicker {
+      position: relative;
+      min-width: 0;
+    }
+
+    .overlayPicker summary {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-sizing: border-box;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #eef5fb;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 0 10px;
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .overlayPicker summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .overlayPicker summary::after {
+      content: "v";
+      color: #aebdc7;
+      font-size: 11px;
+    }
+
+    .overlayMenu {
+      position: absolute;
+      top: 42px;
+      right: 0;
+      z-index: 40;
+      width: min(260px, calc(100vw - 56px));
+      padding: 8px;
+      border-radius: 8px;
+      background: rgba(9, 13, 17, 0.96);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34);
+    }
+
+    .overlayOption {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 6px;
+      color: #eaf2f8;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .overlayOption input {
+      width: 17px;
+      height: 17px;
+      accent-color: #77f0a4;
+      cursor: pointer;
+    }
+
+    button {
+      height: 38px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #eef5fb;
+      font-size: 13px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+
+    button.active {
+      background: #77f0a4;
+      border-color: #b5ffd0;
+      color: #04120b;
+      box-shadow: 0 0 24px rgba(119, 240, 164, 0.34);
+    }
+
+    .controlRow {
+      display: grid;
+      grid-template-columns: 76px 1fr 42px;
+      align-items: center;
+      gap: 10px;
+      color: #d8e3ec;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #77f0a4;
+    }
+
+    select {
+      height: 36px;
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #eef5fb;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 0 10px;
+    }
+
+    option {
+      color: #111820;
+      background: #ffffff;
+    }
+
+    .selectLabel {
+      display: block;
+      margin-bottom: 5px;
+      color: #cdd8e1;
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .legendPanel {
+      position: absolute;
+      right: 18px;
+      bottom: 24px;
+      z-index: 10;
+      width: min(360px, calc(100vw - 36px));
+      padding: 12px 14px;
+    }
+
+    .populationLegendPanel {
+      bottom: 142px;
+    }
+
+    .legendTitle {
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 760;
+    }
+
+    .legendRamp {
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      background:
+        linear-gradient(90deg,
+          rgba(0, 0, 0, 0) 0%,
+          rgba(46, 215, 83, 0.78) 20%,
+          rgba(246, 222, 90, 0.88) 50%,
+          rgba(247, 101, 54, 0.94) 76%,
+          rgba(209, 83, 255, 0.96) 100%);
+    }
+
+    .populationRamp {
+      background:
+        linear-gradient(90deg,
+          rgba(255, 246, 109, 0.50) 0%,
+          rgba(255, 236, 70, 0.82) 32%,
+          rgba(241, 147, 42, 0.92) 60%,
+          rgba(178, 43, 128, 0.96) 82%,
+          rgba(86, 0, 122, 1) 100%);
+    }
+
+    .legendTicks {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      color: #cbd6df;
+      font-size: 11px;
+    }
+
+    .status {
+      position: absolute;
+      left: 18px;
+      bottom: 24px;
+      z-index: 10;
+      max-width: min(560px, calc(100vw - 36px));
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(9, 13, 17, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #dce7ef;
+      font-size: 12px;
+      display: none;
+    }
+
+    .chatPanel {
+      position: absolute;
+      left: 18px;
+      bottom: 24px;
+      z-index: 11;
+      width: min(390px, calc(100vw - 36px));
+      padding: 12px;
+    }
+
+    .chatTitle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: #f4f8fb;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .clearChatButton {
+      width: auto;
+      height: 28px;
+      padding: 0 9px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .chatMessages {
+      display: grid;
+      gap: 8px;
+      max-height: 190px;
+      overflow: auto;
+      padding-right: 3px;
+      margin-bottom: 10px;
+    }
+
+    .chatMessage {
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: #eaf2f8;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .chatMessage.user {
+      background: rgba(119, 240, 164, 0.16);
+      border: 1px solid rgba(119, 240, 164, 0.24);
+    }
+
+    .chatMessage.assistant {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .chatForm {
+      display: grid;
+      grid-template-columns: 1fr 74px;
+      gap: 8px;
+    }
+
+    .chatInput {
+      min-width: 0;
+      height: 38px;
+      box-sizing: border-box;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #eef5fb;
+      font-size: 13px;
+      padding: 0 10px;
+    }
+
+    .chatInput::placeholder {
+      color: #aebdc7;
+    }
+
+    #flowCanvas {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      mix-blend-mode: screen;
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        flex-direction: column;
+      }
+
+      .titlePanel,
+      .controlPanel {
+        width: calc(100vw - 36px);
+        box-sizing: border-box;
+      }
+
+      h1 {
+        font-size: 23px;
+      }
+
+      .legendPanel {
+        bottom: 82px;
+      }
+
+      .chatPanel {
+        bottom: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="viewDiv"></div>
+  <canvas id="flowCanvas"></canvas>
+
+  <div class="topbar">
+    <section class="panel titlePanel">
+      <div class="eyebrow">Wildfire Aerosol Forecast</div>
+      <h1>California AOD Trend</h1>
+      <div class="meta">
+        Predicted aerosol optical depth from <strong>T21-T25</strong>. 
+        <br> Brighter cells indicate stronger smoke/aerosol concentration.
+      </div>
+    </section>
+
+    <section class="panel controlPanel">
+      <div id="timeButtons" class="timeButtons"></div>
+      <div class="toolButtons">
+        <div class="toolGroup">
+          <button class="infoButton" type="button" aria-label="Play explanation">i</button>
+          <button id="playButton" type="button">Play</button>
+          <div class="tooltip">Play animates the forecast sequence across T21-T25 so you can see how predicted aerosol concentration changes over time.</div>
+        </div>
+        <div class="toolGroup">
+          <button class="infoButton" type="button" aria-label="Flow explanation">i</button>
+          <button id="flowButton" type="button">Flow</button>
+          <div class="tooltip">Flow traces local movement toward higher AOD values, showing where the aerosol gradient is strongest in the current time step.</div>
+        </div>
+      </div>
+      <div class="selectGrid">
+        <div class="layerControl">
+          <input id="basemapToggle" class="layerToggle" type="checkbox" checked aria-label="Show basemap" />
+          <label>
+            <span class="selectLabel">Basemap</span>
+            <select id="basemapSelect">
+              <option value="satellite">Satellite</option>
+              <option value="dark-gray-vector">Dark</option>
+              <option value="topo-vector">Topo</option>
+              <option value="oceans">Oceans</option>
+            </select>
+          </label>
+        </div>
+        <div class="layerControl">
+          <span></span>
+          <div>
+            <span class="selectLabel">Exposure Layers</span>
+            <details class="overlayPicker">
+              <summary>Layers</summary>
+              <div class="overlayMenu">
+                <label class="overlayOption">
+                  <input id="populationToggle" type="checkbox" checked />
+                  <span>Population</span>
+                </label>
+                <label class="overlayOption">
+                  <input id="landCoverToggle" type="checkbox" checked />
+                  <span>Land Cover</span>
+                </label>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+      <div class="controlRow">
+        <span>Opacity</span>
+        <input id="opacitySlider" type="range" min="0" max="100" value="82" />
+        <span id="opacityValue">82%</span>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel legendPanel">
+    <div class="legendTitle">Predicted AOD</div>
+    <div class="legendRamp"></div>
+    <div class="legendTicks">
+      <span>0.0</span>
+      <span>0.7</span>
+      <span>1.4</span>
+      <span>2.1</span>
+      <span>2.8+</span>
+    </div>
+  </section>
+
+  <section id="populationLegend" class="panel legendPanel populationLegendPanel">
+    <div class="legendTitle">2020 Population Density</div>
+    <div class="legendRamp populationRamp"></div>
+    <div class="legendTicks">
+      <span>Low</span>
+      <span>Urban</span>
+      <span>Dense</span>
+    </div>
+  </section>
+
+  <section class="panel chatPanel">
+    <div class="chatTitle">
+      <span>Map Assistant</span>
+      <button id="clearChatButton" class="clearChatButton" type="button">Clear</button>
+    </div>
+    <div id="chatMessages" class="chatMessages">
+      <div class="chatMessage assistant">Ask: "average AOD", "highest AOD", or "highest AOD all times".</div>
+    </div>
+    <form id="chatForm" class="chatForm">
+      <input id="chatInput" class="chatInput" type="text" autocomplete="off" placeholder="Ask about AOD, population, land cover..." />
+      <button id="chatSendButton" type="submit">Ask</button>
+    </form>
+  </section>
+
+  <div id="status" class="status">Loading ArcGIS Online imagery layer...</div>
+
+  <script src="aod_flow_grid.js"></script>
+  <script>
+    require([
+      "esri/Map",
+      "esri/Basemap",
+      "esri/views/MapView",
+      "esri/layers/ImageryTileLayer",
+      "esri/layers/ImageryLayer",
+      "esri/layers/FeatureLayer",
+      "esri/renderers/RasterStretchRenderer",
+      "esri/rest/support/MultipartColorRamp",
+      "esri/rest/support/AlgorithmicColorRamp",
+      "esri/Color",
+      "esri/geometry/Extent",
+      "esri/geometry/Point",
+      "esri/TimeExtent",
+      "esri/rest/support/ImageIdentifyParameters",
+      "esri/widgets/ScaleBar",
+      "esri/widgets/Home"
+    ], function (
+      Map,
+      Basemap,
+      MapView,
+      ImageryTileLayer,
+      ImageryLayer,
+      FeatureLayer,
+      RasterStretchRenderer,
+      MultipartColorRamp,
+      AlgorithmicColorRamp,
+      Color,
+      Extent,
+      Point,
+      TimeExtent,
+      ImageIdentifyParameters,
+      ScaleBar,
+      Home
+    ) {
+      const imageryItems = {
+        21: "9e9d9b65e936457a892a5d348784ac01",
+        22: "7698e5294ef54abfae58c7247bf771da",
+        23: "6c15bf8c33254d59978df312666e0329",
+        24: "659d668c195341f3b859ba15ffdc3062",
+        25: "09c5b2571a5c4dc9899e5b8b91e43896"
+      };
+      const aodExtent = new Extent({
+        xmin: -124.02,
+        ymin: 34.98,
+        xmax: -121.58,
+        ymax: 37.42,
+        spatialReference: { wkid: 4326 }
+      });
+
+      const statusNode = document.getElementById("status");
+      const opacitySlider = document.getElementById("opacitySlider");
+      const opacityValue = document.getElementById("opacityValue");
+      const timeButtons = document.getElementById("timeButtons");
+      const playButton = document.getElementById("playButton");
+      const flowButton = document.getElementById("flowButton");
+      const flowCanvas = document.getElementById("flowCanvas");
+      const flowContext = flowCanvas.getContext("2d");
+      const basemapToggle = document.getElementById("basemapToggle");
+      const basemapSelect = document.getElementById("basemapSelect");
+      const populationToggle = document.getElementById("populationToggle");
+      const landCoverToggle = document.getElementById("landCoverToggle");
+      const populationLegend = document.getElementById("populationLegend");
+      const chatForm = document.getElementById("chatForm");
+      const chatInput = document.getElementById("chatInput");
+      const chatMessages = document.getElementById("chatMessages");
+      const clearChatButton = document.getElementById("clearChatButton");
+      const timeSteps = Object.keys(imageryItems).map(Number);
+      const flowGrid = window.AOD_FLOW_GRID;
+      const emptyBasemap = new Basemap({
+        baseLayers: []
+      });
+
+      const colorRamp = new MultipartColorRamp({
+        colorRamps: [
+          new AlgorithmicColorRamp({
+            fromColor: new Color([0, 0, 0, 0]),
+            toColor: new Color([46, 215, 83, 185])
+          }),
+          new AlgorithmicColorRamp({
+            fromColor: new Color([46, 215, 83, 185]),
+            toColor: new Color([246, 222, 90, 220])
+          }),
+          new AlgorithmicColorRamp({
+            fromColor: new Color([246, 222, 90, 220]),
+            toColor: new Color([247, 101, 54, 238])
+          }),
+          new AlgorithmicColorRamp({
+            fromColor: new Color([247, 101, 54, 238]),
+            toColor: new Color([209, 83, 255, 245])
+          })
+        ]
+      });
+
+      const renderer = new RasterStretchRenderer({
+        stretchType: "min-max",
+        statistics: [{
+          min: 0,
+          max: 2.8,
+          avg: 0.8,
+          stddev: 0.55
+        }],
+        colorRamp
+      });
+
+      const populationRenderer = {
+        type: "class-breaks",
+        field: "POP20_SQMI",
+        defaultLabel: "No 2020 population density",
+        defaultSymbol: {
+          type: "simple-fill",
+          color: [0, 0, 0, 0],
+          outline: {
+            color: [255, 255, 160, 0.08],
+            width: 0.2
+          }
+        },
+        classBreakInfos: [
+          {
+            minValue: 0,
+            maxValue: 250,
+            label: "0 - 250 people / sq mi",
+            symbol: {
+              type: "simple-fill",
+              color: [255, 246, 109, 0.68],
+              outline: { color: [255, 247, 148, 0.16], width: 0.15 }
+            }
+          },
+          {
+            minValue: 250,
+            maxValue: 1200,
+            label: "250 - 1,200 people / sq mi",
+            symbol: {
+              type: "simple-fill",
+              color: [255, 236, 70, 0.78],
+              outline: { color: [255, 245, 126, 0.16], width: 0.15 }
+            }
+          },
+          {
+            minValue: 1200,
+            maxValue: 4200,
+            label: "1,200 - 4,200 people / sq mi",
+            symbol: {
+              type: "simple-fill",
+              color: [241, 147, 42, 0.88],
+              outline: { color: [255, 190, 82, 0.20], width: 0.2 }
+            }
+          },
+          {
+            minValue: 4200,
+            maxValue: 12000,
+            label: "4,200 - 12,000 people / sq mi",
+            symbol: {
+              type: "simple-fill",
+              color: [178, 43, 128, 0.94],
+              outline: { color: [237, 102, 181, 0.24], width: 0.2 }
+            }
+          },
+          {
+            minValue: 12000,
+            maxValue: 1000000,
+            label: "12,000+ people / sq mi",
+            symbol: {
+              type: "simple-fill",
+              color: [86, 0, 122, 0.98],
+              outline: { color: [203, 82, 242, 0.34], width: 0.25 }
+            }
+          }
+        ]
+      };
+
+      const populationLayer = new FeatureLayer({
+        url: "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/USA_Census_BlockGroups/FeatureServer/0",
+        title: "2020 Census Block Groups population density",
+        renderer: populationRenderer,
+        opacity: 0.92,
+        blendMode: "normal",
+        outFields: ["STATE_ABBR", "FIPS", "POPULATION_2020", "POP20_SQMI"],
+        popupTemplate: {
+          title: "2020 Census Block Group {FIPS}",
+          content: [
+            {
+              type: "fields",
+              fieldInfos: [
+                {
+                  fieldName: "POPULATION_2020",
+                  label: "2020 population",
+                  format: { digitSeparator: true, places: 0 }
+                },
+                {
+                  fieldName: "POP20_SQMI",
+                  label: "People per square mile",
+                  format: { digitSeparator: true, places: 0 }
+                }
+              ]
+            }
+          ]
+        },
+        visible: true
+      });
+
+      const landCoverLayer = new ImageryLayer({
+        portalItem: {
+          id: "32e2ccc6416746a9a72b4d216813f84f"
+        },
+        title: "USA Annual NLCD Land Cover 2020",
+        timeExtent: new TimeExtent({
+          start: new Date(2020, 0, 1),
+          end: new Date(2020, 11, 31)
+        }),
+        opacity: 0.62,
+        blendMode: "normal",
+        visible: true
+      });
+
+      const landCoverClasses = {
+        11: "Open Water",
+        12: "Perennial Ice / Snow",
+        21: "Developed, Open Space",
+        22: "Developed, Low Intensity",
+        23: "Developed, Medium Intensity",
+        24: "Developed, High Intensity",
+        31: "Barren Land",
+        41: "Deciduous Forest",
+        42: "Evergreen Forest",
+        43: "Mixed Forest",
+        52: "Shrub / Scrub",
+        71: "Grassland / Herbaceous",
+        81: "Pasture / Hay",
+        82: "Cultivated Crops",
+        90: "Woody Wetlands",
+        95: "Emergent Herbaceous Wetlands"
+      };
+
+      let currentTime = 21;
+      let isPlaying = false;
+      let playTimer = null;
+      let flowActive = false;
+      let flowAnimation = null;
+      let particles = [];
+      let flowTransform = null;
+      const imageryLayers = {};
+
+      Object.entries(imageryItems).forEach(([time, itemId]) => {
+        imageryLayers[time] = new ImageryTileLayer({
+          portalItem: {
+            id: itemId
+          },
+          title: `Predicted AOD time ${time}`,
+          renderer,
+          opacity: 0.82,
+          blendMode: "screen",
+          visible: Number(time) === currentTime
+        });
+      });
+
+      const map = new Map({
+        basemap: "satellite",
+        layers: [landCoverLayer, populationLayer, ...Object.values(imageryLayers)]
+      });
+
+      const view = new MapView({
+        container: "viewDiv",
+        map,
+        extent: aodExtent,
+        constraints: {
+          minZoom: 5,
+          maxZoom: 14
+        },
+        popup: {
+          dockEnabled: false,
+          dockOptions: {
+            position: "bottom-right",
+            breakpoint: false
+          }
+        }
+      });
+
+      view.ui.add(new Home({ view }), "top-left");
+      view.ui.add(new ScaleBar({ view, unit: "dual" }), "bottom-left");
+
+      Object.keys(imageryItems).forEach((time) => {
+        const button = document.createElement("button");
+        button.textContent = `T${time}`;
+        button.className = Number(time) === currentTime ? "active" : "";
+        button.addEventListener("click", () => setTime(Number(time)));
+        timeButtons.appendChild(button);
+      });
+
+      playButton.addEventListener("click", togglePlayback);
+      flowButton.addEventListener("click", toggleFlow);
+      basemapToggle.addEventListener("change", syncBasemap);
+      basemapSelect.addEventListener("change", () => {
+        syncBasemap();
+      });
+
+      populationToggle.addEventListener("change", syncOverlayLayers);
+      landCoverToggle.addEventListener("change", syncOverlayLayers);
+      chatForm.addEventListener("submit", handleChatSubmit);
+      clearChatButton.addEventListener("click", clearChatHistory);
+
+      opacitySlider.addEventListener("input", () => {
+        const value = Number(opacitySlider.value);
+        opacityValue.textContent = `${value}%`;
+        Object.values(imageryLayers).forEach((layer) => {
+          layer.opacity = value / 100;
+        });
+      });
+
+      Promise.all(Object.values(imageryLayers).map((layer) => layer.when()))
+        .then(() => {
+          statusNode.textContent = `Predicted AOD time ${currentTime} loaded`;
+          view.goTo(aodExtent, { duration: 0 });
+          resizeFlowCanvas();
+          resetParticles();
+        })
+        .catch((error) => {
+          statusNode.textContent = "Could not load one or more ArcGIS Online tiled imagery layers. Check that all items are shared publicly.";
+          console.error(error);
+        });
+
+      view.on("click", async (event) => {
+        const activeLayer = imageryLayers[currentTime];
+        let aodValue = "No raster value returned";
+        let populationContent = "No 2020 block group population feature here.";
+        let landCoverContent = "";
+
+        try {
+          if (!activeLayer || typeof activeLayer.identify !== "function") {
+            throw new Error("identify is not available for this layer type");
+          }
+          const response = await activeLayer.identify(event.mapPoint);
+          aodValue = response && response.value !== undefined ? Number(response.value).toFixed(4) : "No data";
+        } catch (error) {
+          aodValue = "No raster value was returned here.";
+        }
+
+        if (populationLayer.visible) {
+          try {
+            const populationQuery = populationLayer.createQuery();
+            populationQuery.geometry = event.mapPoint;
+            populationQuery.spatialRelationship = "intersects";
+            populationQuery.outFields = ["FIPS", "POPULATION_2020", "POP20_SQMI"];
+            populationQuery.returnGeometry = false;
+
+            const populationResponse = await populationLayer.queryFeatures(populationQuery);
+            const feature = populationResponse.features[0];
+            if (feature) {
+              const attributes = feature.attributes;
+              populationContent = [
+                `Block group: ${attributes.FIPS || "Unknown"}`,
+                `2020 population: ${formatNumber(attributes.POPULATION_2020)}`,
+                `Density: ${formatNumber(attributes.POP20_SQMI)} people / sq mi`
+              ].join("<br>");
+            }
+          } catch (error) {
+            populationContent = "Could not query 2020 block group population here.";
+            console.error(error);
+          }
+        }
+
+        if (landCoverLayer.visible) {
+          try {
+            const landCoverParameters = new ImageIdentifyParameters({
+              geometry: event.mapPoint,
+              timeExtent: landCoverLayer.timeExtent,
+              returnGeometry: false,
+              returnCatalogItems: false,
+              returnPixelValues: true,
+              pixelSize: {
+                x: view.resolution,
+                y: view.resolution,
+                spatialReference: view.spatialReference
+              }
+            });
+            const landCoverResponse = await landCoverLayer.identify(landCoverParameters);
+            const landCoverValue = landCoverResponse && landCoverResponse.value !== undefined
+              ? Number(landCoverResponse.value)
+              : null;
+            const landCoverName = landCoverClasses[landCoverValue] || "Unknown / no data";
+            landCoverContent = `<br><br><strong>Land cover</strong><br>Class: ${landCoverName}${landCoverValue === null ? "" : ` (${landCoverValue})`}`;
+          } catch (error) {
+            landCoverContent = "<br><br><strong>Land cover</strong><br>No land cover value was returned here.";
+          }
+        }
+
+        view.popup.open({
+          title: `Predicted AOD time ${currentTime}`,
+          content: `<strong>AOD value:</strong> ${aodValue}<br><br><strong>Population overlay</strong><br>${populationContent}${landCoverContent}`,
+          location: event.mapPoint
+        });
+      });
+
+      view.watch("stationary", () => {
+        resizeFlowCanvas();
+        resetParticles();
+        if (flowActive) {
+          drawFlowFrame();
+        }
+      });
+
+      window.addEventListener("resize", () => {
+        resizeFlowCanvas();
+        resetParticles();
+      });
+
+      function setTime(time) {
+        currentTime = time;
+        Object.entries(imageryLayers).forEach(([layerTime, layer]) => {
+          layer.visible = Number(layerTime) === currentTime;
+        });
+
+        document.querySelectorAll(".timeButtons button").forEach((button) => {
+          button.classList.toggle("active", button.textContent === `T${time}`);
+        });
+
+        resetParticles();
+        statusNode.textContent = `Predicted AOD time ${time} | item ${imageryItems[time]}`;
+      }
+
+      function syncBasemap() {
+        if (basemapToggle.checked) {
+          map.basemap = basemapSelect.value;
+          statusNode.textContent = `Basemap: ${basemapSelect.options[basemapSelect.selectedIndex].textContent}`;
+          return;
+        }
+
+        map.basemap = emptyBasemap;
+        statusNode.textContent = "Basemap hidden";
+      }
+
+      function syncOverlayLayers() {
+        populationLayer.visible = populationToggle.checked;
+        landCoverLayer.visible = landCoverToggle.checked;
+        populationLegend.style.display = populationLayer.visible ? "block" : "none";
+
+        const visibleLayers = [];
+        if (populationLayer.visible) {
+          visibleLayers.push("population");
+        }
+        if (landCoverLayer.visible) {
+          visibleLayers.push("land cover");
+        }
+
+        statusNode.textContent = visibleLayers.length
+          ? `Showing ${visibleLayers.join(" and ")} overlay`
+          : "Demographic and land cover overlays hidden";
+      }
+
+      async function handleChatSubmit(event) {
+        event.preventDefault();
+        const question = chatInput.value.trim();
+        if (!question) {
+          return;
+        }
+
+        addChatMessage(question, "user");
+        chatInput.value = "";
+        const normalized = question.toLowerCase();
+
+        const asksAboutAod = /(aod|aerosol|smoke|烟|气溶胶)/.test(normalized);
+        const useAllTimes = /(all|overall|sequence|t21|t25|across|全部|所有|整个|序列)/.test(normalized);
+
+        if (asksAboutAod && /(average|mean|avg|均值|平均)/.test(normalized)) {
+          answerAodSummary("average", useAllTimes);
+          return;
+        }
+
+        if (asksAboutAod && /(summary|statistics|stats|describe|概况|统计)/.test(normalized)) {
+          answerAodSummary("summary", useAllTimes);
+          return;
+        }
+
+        if (asksAboutAod && /(lowest|min|minimum|低|最小|最低)/.test(normalized)) {
+          await answerExtremeAod("min", useAllTimes);
+          return;
+        }
+
+        if (asksAboutAod && /(highest|max|maximum|peak|高|最高|最大)/.test(normalized)) {
+          await answerExtremeAod("max", useAllTimes);
+          return;
+        }
+
+        addChatMessage("I can answer local map questions like: average AOD, AOD summary, highest AOD, lowest AOD, max AOD all times, population at highest AOD, or land cover at highest AOD.", "assistant");
+      }
+
+      function answerAodSummary(mode, useAllTimes) {
+        if (!flowGrid || !flowGrid.times) {
+          addChatMessage("AOD grid data is not available in this page.", "assistant");
+          return;
+        }
+
+        const summary = summarizeAod(useAllTimes);
+        if (!summary) {
+          addChatMessage("I could not find valid AOD values in the loaded grid.", "assistant");
+          return;
+        }
+
+        if (mode === "average") {
+          addChatMessage([
+            `Average ${useAllTimes ? "sequence" : "current"} AOD: ${summary.mean.toFixed(4)}.`,
+            `Scope: ${summary.label}.`,
+            `Valid grid cells: ${formatNumber(summary.count)}.`
+          ].join("<br>"), "assistant");
+          return;
+        }
+
+        addChatMessage([
+          `AOD summary for ${summary.label}:`,
+          `Mean: ${summary.mean.toFixed(4)}`,
+          `Minimum: ${summary.min.toFixed(4)} at T${summary.minTime}`,
+          `Maximum: ${summary.max.toFixed(4)} at T${summary.maxTime}`,
+          `Valid grid cells: ${formatNumber(summary.count)}`
+        ].join("<br>"), "assistant");
+      }
+
+      async function answerExtremeAod(extremeType, useAllTimes) {
+        if (!flowGrid || !flowGrid.times) {
+          addChatMessage("AOD grid data is not available in this page.", "assistant");
+          return;
+        }
+
+        addChatMessage("Checking the AOD grid and overlay layers...", "assistant");
+        const result = findExtremeAod(extremeType, useAllTimes);
+        if (!result) {
+          addChatMessage("I could not find a valid AOD value in the loaded grid.", "assistant");
+          return;
+        }
+
+        if (result.time !== currentTime) {
+          setTime(result.time);
+        }
+
+        const point = new Point({
+          longitude: result.longitude,
+          latitude: result.latitude,
+          spatialReference: { wkid: 4326 }
+        });
+
+        const [populationInfo, landCoverInfo] = await Promise.all([
+          queryPopulationAtPoint(point),
+          queryLandCoverAtPoint(point)
+        ]);
+
+        const answer = [
+          `${extremeType === "max" ? "Highest" : "Lowest"} ${useAllTimes ? "sequence" : "current"} AOD: ${result.value.toFixed(4)} at T${result.time}.`,
+          `Location: ${result.latitude.toFixed(4)}, ${result.longitude.toFixed(4)}.`,
+          `Population: ${populationInfo.summary}.`,
+          `Land cover: ${landCoverInfo.summary}.`
+        ].join("<br>");
+
+        addChatMessage(answer, "assistant");
+        await view.goTo({
+          center: point,
+          zoom: Math.max(view.zoom || 8, 10)
+        }, { duration: 900 });
+
+        view.popup.open({
+          title: `${extremeType === "max" ? "Highest" : "Lowest"} AOD at T${result.time}`,
+          content: `<strong>AOD value:</strong> ${result.value.toFixed(4)}<br><br><strong>Population overlay</strong><br>${populationInfo.html}<br><br><strong>Land cover</strong><br>${landCoverInfo.html}`,
+          location: point
+        });
+      }
+
+      function addChatMessage(content, role) {
+        const message = document.createElement("div");
+        message.className = `chatMessage ${role}`;
+        if (role === "user") {
+          message.textContent = content;
+        } else {
+          message.innerHTML = content;
+        }
+        chatMessages.appendChild(message);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      function clearChatHistory() {
+        chatMessages.innerHTML = "";
+        addChatMessage('Ask: "average AOD", "highest AOD", or "highest AOD all times".', "assistant");
+      }
+
+      function summarizeAod(useAllTimes) {
+        const timesToCheck = useAllTimes ? timeSteps : [currentTime];
+        let count = 0;
+        let sum = 0;
+        let min = Infinity;
+        let max = -Infinity;
+        let minTime = currentTime;
+        let maxTime = currentTime;
+
+        timesToCheck.forEach((time) => {
+          const values = flowGrid.times[time];
+          if (!values) {
+            return;
+          }
+
+          values.forEach((rawValue) => {
+            const value = Number(rawValue);
+            if (!Number.isFinite(value)) {
+              return;
+            }
+
+            count += 1;
+            sum += value;
+            if (value < min) {
+              min = value;
+              minTime = time;
+            }
+            if (value > max) {
+              max = value;
+              maxTime = time;
+            }
+          });
+        });
+
+        if (!count) {
+          return null;
+        }
+
+        return {
+          count,
+          mean: sum / count,
+          min,
+          max,
+          minTime,
+          maxTime,
+          label: useAllTimes ? "T21-T25" : `T${currentTime}`
+        };
+      }
+
+      function findExtremeAod(extremeType, useAllTimes) {
+        const timesToCheck = useAllTimes ? timeSteps : [currentTime];
+        let best = null;
+
+        timesToCheck.forEach((time) => {
+          const values = flowGrid.times[time];
+          if (!values) {
+            return;
+          }
+
+          for (let index = 0; index < values.length; index += 1) {
+            const value = Number(values[index]);
+            if (!Number.isFinite(value)) {
+              continue;
+            }
+            const isBetter = !best || (extremeType === "max" ? value > best.value : value < best.value);
+            if (isBetter) {
+              const row = Math.floor(index / flowGrid.width);
+              const col = index % flowGrid.width;
+              best = {
+                time,
+                value,
+                col,
+                row,
+                longitude: flowGrid.lon0 + col * flowGrid.step,
+                latitude: flowGrid.lat0 + row * flowGrid.step
+              };
+            }
+          }
+        });
+
+        return best;
+      }
+
+      async function queryPopulationAtPoint(point) {
+        try {
+          if (!populationLayer.loaded) {
+            await populationLayer.load();
+          }
+
+          const populationQuery = populationLayer.createQuery();
+          populationQuery.geometry = point;
+          populationQuery.spatialRelationship = "intersects";
+          populationQuery.outFields = ["FIPS", "POPULATION_2020", "POP20_SQMI"];
+          populationQuery.returnGeometry = false;
+
+          const populationResponse = await populationLayer.queryFeatures(populationQuery);
+          const feature = populationResponse.features[0];
+          if (!feature) {
+            return {
+              summary: "no block group feature found",
+              html: "No 2020 block group population feature here."
+            };
+          }
+
+          const attributes = feature.attributes;
+          return {
+            summary: `${formatNumber(attributes.POPULATION_2020)} people in block group ${attributes.FIPS || "Unknown"}`,
+            html: [
+              `Block group: ${attributes.FIPS || "Unknown"}`,
+              `2020 population: ${formatNumber(attributes.POPULATION_2020)}`,
+              `Density: ${formatNumber(attributes.POP20_SQMI)} people / sq mi`
+            ].join("<br>")
+          };
+        } catch (error) {
+          console.error(error);
+          return {
+            summary: "population query failed",
+            html: "Could not query 2020 block group population here."
+          };
+        }
+      }
+
+      async function queryLandCoverAtPoint(point) {
+        try {
+          if (!landCoverLayer.loaded) {
+            await landCoverLayer.load();
+          }
+
+          const landCoverParameters = new ImageIdentifyParameters({
+            geometry: point,
+            timeExtent: landCoverLayer.timeExtent,
+            returnGeometry: false,
+            returnCatalogItems: false,
+            returnPixelValues: true,
+            pixelSize: {
+              x: view.resolution,
+              y: view.resolution,
+              spatialReference: view.spatialReference
+            }
+          });
+          const landCoverResponse = await landCoverLayer.identify(landCoverParameters);
+          const landCoverValue = landCoverResponse && landCoverResponse.value !== undefined
+            ? Number(landCoverResponse.value)
+            : null;
+          const landCoverName = landCoverClasses[landCoverValue] || "Unknown / no data";
+
+          return {
+            summary: landCoverValue === null ? landCoverName : `${landCoverName} (${landCoverValue})`,
+            html: `Class: ${landCoverName}${landCoverValue === null ? "" : ` (${landCoverValue})`}`
+          };
+        } catch (error) {
+          console.error(error);
+          return {
+            summary: "land cover query failed",
+            html: "No land cover value was returned here."
+          };
+        }
+      }
+
+      function togglePlayback() {
+        if (isPlaying) {
+          stopPlayback();
+          statusNode.textContent = `Predicted AOD time ${currentTime}`;
+          return;
+        }
+
+        isPlaying = true;
+        playButton.textContent = "Pause";
+        playButton.classList.add("active");
+        playTimer = window.setInterval(() => {
+          const currentIndex = timeSteps.indexOf(currentTime);
+          const nextTime = timeSteps[(currentIndex + 1) % timeSteps.length];
+          setTime(nextTime);
+        }, 1100);
+        statusNode.textContent = "Playing predicted AOD time sequence";
+      }
+
+      function stopPlayback() {
+        isPlaying = false;
+        playButton.textContent = "Play";
+        playButton.classList.remove("active");
+        if (playTimer) {
+          window.clearInterval(playTimer);
+          playTimer = null;
+        }
+      }
+
+      function formatNumber(value) {
+        if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+          return "No data";
+        }
+        return Math.round(Number(value)).toLocaleString();
+      }
+
+      function toggleFlow() {
+        flowActive = !flowActive;
+        flowButton.classList.toggle("active", flowActive);
+        flowButton.textContent = flowActive ? "Flow On" : "Flow";
+
+        if (flowActive) {
+          resetParticles();
+          drawFlowFrame();
+          statusNode.textContent = `Gradient flow: particles move toward higher AOD at time ${currentTime}`;
+          return;
+        }
+
+        window.cancelAnimationFrame(flowAnimation);
+        flowAnimation = null;
+        clearFlowCanvas();
+        statusNode.textContent = `Predicted AOD time ${currentTime}`;
+      }
+
+      function resizeFlowCanvas() {
+        const width = Math.max(1, view.width || window.innerWidth);
+        const height = Math.max(1, view.height || window.innerHeight);
+        const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+        flowCanvas.width = Math.round(width * pixelRatio);
+        flowCanvas.height = Math.round(height * pixelRatio);
+        flowCanvas.style.width = `${width}px`;
+        flowCanvas.style.height = `${height}px`;
+        flowContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        updateFlowTransform();
+      }
+
+      function clearFlowCanvas() {
+        flowContext.clearRect(0, 0, flowCanvas.width, flowCanvas.height);
+      }
+
+      function resetParticles() {
+        if (!flowGrid) {
+          particles = [];
+          return;
+        }
+
+        const count = Math.min(850, Math.max(260, Math.floor((view.width * view.height) / 1150)));
+        particles = Array.from({ length: count }, () => createParticle());
+      }
+
+      function createParticle() {
+        return {
+          col: 1 + Math.random() * (flowGrid.width - 3),
+          row: 1 + Math.random() * (flowGrid.height - 3),
+          age: Math.floor(Math.random() * 90)
+        };
+      }
+
+      function drawFlowFrame() {
+        if (!flowActive || !flowGrid || !flowGrid.times[currentTime]) {
+          return;
+        }
+
+        flowContext.globalCompositeOperation = "source-over";
+        flowContext.fillStyle = "rgba(5, 7, 10, 0.13)";
+        flowContext.fillRect(0, 0, view.width, view.height);
+        flowContext.globalCompositeOperation = "lighter";
+        flowContext.lineWidth = 1.15;
+
+        const values = flowGrid.times[currentTime];
+        particles.forEach((particle, index) => {
+          const vector = sampleGradient(values, particle.col, particle.row);
+          if (!vector || particle.age > 120) {
+            particles[index] = createParticle();
+            return;
+          }
+
+          const start = gridToScreen(particle.col, particle.row);
+          if (!start || start.x < -40 || start.x > view.width + 40 || start.y < -40 || start.y > view.height + 40) {
+            particles[index] = createParticle();
+            return;
+          }
+
+          const speed = 0.035 + Math.min(vector.value, 3.2) * 0.008;
+          particle.col += vector.dx * speed;
+          particle.row += vector.dy * speed;
+          particle.age += 1;
+
+          const end = gridToScreen(particle.col, particle.row);
+          if (!end) {
+            return;
+          }
+
+          const intensity = Math.max(0.15, Math.min(1, vector.value / 2.8));
+          flowContext.strokeStyle = `rgba(${Math.round(70 + 185 * intensity)}, ${Math.round(210 + 35 * intensity)}, ${Math.round(170 - 80 * intensity)}, ${0.22 + 0.80 * intensity})`;
+          flowContext.beginPath();
+          flowContext.moveTo(start.x, start.y);
+          flowContext.lineTo(end.x, end.y);
+          flowContext.stroke();
+        });
+
+        flowAnimation = window.requestAnimationFrame(drawFlowFrame);
+      }
+
+      function updateFlowTransform() {
+        if (!flowGrid) {
+          flowTransform = null;
+          return;
+        }
+
+        const topLeft = view.toScreen(new Point({
+          longitude: flowGrid.lon0,
+          latitude: flowGrid.lat0 + flowGrid.step * (flowGrid.height - 1),
+          spatialReference: { wkid: 4326 }
+        }));
+        const topRight = view.toScreen(new Point({
+          longitude: flowGrid.lon0 + flowGrid.step * (flowGrid.width - 1),
+          latitude: flowGrid.lat0 + flowGrid.step * (flowGrid.height - 1),
+          spatialReference: { wkid: 4326 }
+        }));
+        const bottomLeft = view.toScreen(new Point({
+          longitude: flowGrid.lon0,
+          latitude: flowGrid.lat0,
+          spatialReference: { wkid: 4326 }
+        }));
+
+        if (!topLeft || !topRight || !bottomLeft) {
+          flowTransform = null;
+          return;
+        }
+
+        flowTransform = {
+          x0: bottomLeft.x,
+          y0: bottomLeft.y,
+          dxCol: (topRight.x - topLeft.x) / (flowGrid.width - 1),
+          dyRow: (topLeft.y - bottomLeft.y) / (flowGrid.height - 1)
+        };
+      }
+
+      function gridToScreen(col, row) {
+        if (!flowTransform) {
+          updateFlowTransform();
+        }
+        if (!flowTransform) {
+          return null;
+        }
+
+        return {
+          x: flowTransform.x0 + col * flowTransform.dxCol,
+          y: flowTransform.y0 + row * flowTransform.dyRow
+        };
+      }
+
+      function sampleGradient(values, particleCol, particleRow) {
+        const col = Math.round(particleCol);
+        const row = Math.round(particleRow);
+        if (col < 1 || col >= flowGrid.width - 1 || row < 1 || row >= flowGrid.height - 1) {
+          return null;
+        }
+
+        const idx = row * flowGrid.width + col;
+        const left = values[idx - 1];
+        const right = values[idx + 1];
+        const down = values[idx - flowGrid.width];
+        const up = values[idx + flowGrid.width];
+        const value = values[idx];
+        let dx = right - left;
+        let dy = up - down;
+        const magnitude = Math.hypot(dx, dy);
+
+        if (!Number.isFinite(magnitude) || magnitude < 0.00001) {
+          const angle = Math.random() * Math.PI * 2;
+          dx = Math.cos(angle) * 0.12;
+          dy = Math.sin(angle) * 0.12;
+        } else {
+          dx /= magnitude;
+          dy /= magnitude;
+        }
+
+        return { dx, dy, value };
+      }
+    });
+  </script>
+</body>
+</html>
